@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>FAROL PE · Observatório Socioeconômico</title>
+<style>
+  :root {
+    --sidebar-width: 260px;
+    --bi-height: 100vh;
+    --bi-crop: 0px;
+
+    /* ===== Paleta institucional de Pernambuco ===== */
+    --pe-navy: #0b1f3f;
+    --pe-navy-deep: #071634;
+    --pe-blue: #1663d6;
+    --pe-gold: #f8c630;
+    --pe-green: #1a8f4c;
+    --pe-red: #d32f2f;
+    --gold-glow: rgba(248, 198, 48, 0.35);
+
+    --text-main: #eef2f8;
+    --text-dim: #93a1bd;
+    --border-line: rgba(255, 255, 255, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background: #f4f5f7;
+    font-family: 'Segoe UI', system-ui, Arial, sans-serif;
+  }
+
+  .app {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ===== Barra lateral ===== */
+  .sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+    background: linear-gradient(180deg, var(--pe-navy) 0%, var(--pe-navy-deep) 100%);
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-line);
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .flag-stripe {
+    height: 4px;
+    width: 100%;
+    background: linear-gradient(90deg, var(--pe-green) 0%, var(--pe-gold) 50%, var(--pe-red) 100%);
+    flex-shrink: 0;
+  }
+
+  .brand {
+    padding: 24px 20px 22px 20px;
+    border-bottom: 1px solid var(--border-line);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand .beacon { width: 34px; height: 34px; flex-shrink: 0; }
+  .brand .beacon svg { width: 100%; height: 100%; }
+
+  .brand-text {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #fff;
+  }
+
+  .brand-text span { color: var(--pe-gold); }
+
+  .brand-sub {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.8px;
+    margin-top: 3px;
+    text-transform: uppercase;
+  }
+
+  nav.menu {
+    padding: 14px 10px;
+    flex: 1;
+  }
+
+  /* ===== Item simples (Home) ===== */
+  .nav-single {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    text-align: left;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .nav-single:hover { background: rgba(255,255,255,0.06); }
+
+  .nav-single.active {
+    background: linear-gradient(90deg, var(--gold-glow), transparent);
+    color: var(--pe-gold);
+    box-shadow: inset 3px 0 0 var(--pe-gold);
+  }
+
+  .nav-single .icon-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    background: rgba(248, 198, 48, 0.15);
+    border: 1px solid rgba(248, 198, 48, 0.45);
+    flex-shrink: 0;
+  }
+
+  .menu-divider {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 14px 6px 14px;
+    font-weight: 700;
+  }
+
+  /* =====================================================================
+     GRUPO (funciona em qualquer nível: topo, ou aninhado dentro de outro)
+     Basta colocar um .group dentro de um .subitems para criar um 3º,
+     4º... nível de menu. O JS trata isso de forma genérica.
+  ===================================================================== */
+  .group { margin-bottom: 4px; }
+
+  .group-header {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-main);
+    text-align: left;
+    padding: 12px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 8px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .group-header:hover { background: rgba(255,255,255,0.05); }
+
+  .group-header .label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .group-header .icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    background: rgba(22, 99, 214, 0.18);
+    border: 1px solid rgba(22, 99, 214, 0.5);
+    flex-shrink: 0;
+  }
+
+  .group-header .chevron {
+    font-size: 11px;
+    color: var(--text-dim);
+    transition: transform 0.2s ease;
+  }
+
+  /* estado aberto -- sempre escopado ao PRÓPRIO cabeçalho (child combinator) */
+  .group.open > .group-header {
+    background: rgba(248, 198, 48, 0.08);
+    color: #fff;
+  }
+
+  .group.open > .group-header .chevron {
+    transform: rotate(90deg);
+    color: var(--pe-gold);
+  }
+
+  /* ===== Subitens (container que guarda sub-btn e/ou outro .group) ===== */
+  .subitems {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    margin-left: 10px;
+    border-left: 1px solid var(--border-line);
+  }
+
+  .group.open > .subitems {
+    max-height: 800px;
+  }
+
+  .sub-btn {
+    width: calc(100% - 4px);
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    text-align: left;
+    padding: 10px 14px 10px 18px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 6px;
+    margin: 2px 2px;
+  }
+
+  .sub-btn:hover {
+    color: var(--text-main);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .sub-btn.active {
+    color: var(--pe-gold);
+    background: rgba(248, 198, 48, 0.12);
+    font-weight: 700;
+  }
+
+  /* ===== Linha de subitem + botão de informações ===== */
+  .subitem-row {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin: 2px 2px;
+  }
+
+  .subitem-row .sub-btn {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .info-btn {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    padding: 0;
+    border: 1px solid rgba(147, 161, 189, 0.45);
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+    color: var(--text-dim);
+    font-family: Georgia, serif;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 26px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .info-btn:hover,
+  .info-btn.active {
+    color: var(--pe-navy);
+    background: var(--pe-gold);
+    border-color: var(--pe-gold);
+    box-shadow: 0 2px 8px rgba(248,198,48,0.28);
+  }
+
+
+  /* ===== Estilo específico para grupos aninhados (nível 3+) ===== */
+  .subitems .group-header {
+    padding: 9px 14px 9px 18px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-dim);
+  }
+
+  .subitems .group-header .icon { display: none; }
+
+  .subitems .group.open > .group-header {
+    color: var(--pe-gold);
+    background: rgba(248, 198, 48, 0.06);
+  }
+
+  .subitems .subitems { margin-left: 14px; }
+
+  .subitems .subitems .sub-btn {
+    font-size: 11.5px;
+    padding: 8px 14px 8px 18px;
+  }
+
+  .sidebar-footer {
+    padding: 14px 20px;
+    font-size: 10px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border-line);
+    letter-spacing: 0.5px;
+  }
+
+  /* ===== Área principal ===== */
+  .bi-area {
+    flex: 1;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+    background: #f4f5f7;
+}
+
+.bi-container {
+    width: 100%;
+    height: 100%;
+    display: none;
+    overflow: hidden;
+    position: relative;
+}
+
+.bi-container.active {
+    display: block;
+}
+
+.bi-container iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+
+    
+}
+
+.bi-container:has(iframe)::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 34px;
+    background: #f4f5f7;
+    z-index: 10;
+    pointer-events: none;
+}
+  /* ===== HOME ===== */
+  #home {
+    overflow-y: auto;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(22,99,214,0.10), transparent 45%),
+      radial-gradient(circle at 85% 90%, rgba(248,198,48,0.10), transparent 45%),
+      #fff;
+  }
+
+  .home-inner {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 70px 40px 60px 40px;
+  }
+
+  .home-topline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+
+  .home-topline .stripe {
+    width: 46px;
+    height: 5px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--pe-green), var(--pe-gold), var(--pe-red));
+  }
+
+  .home-topline span {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--pe-blue);
+  }
+
+  .home-title {
+    font-size: 46px;
+    font-weight: 800;
+    color: var(--pe-navy);
+    margin: 0 0 6px 0;
+    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .home-title .beacon-lg { width: 46px; height: 46px; flex-shrink: 0; }
+
+  .home-title span.gold {
+    color: var(--pe-gold);
+    -webkit-text-stroke: 0.5px var(--pe-navy);
+  }
+
+  .home-subtitle {
+    font-size: 16px;
+    color: var(--text-dim);
+    font-weight: 600;
+    margin-bottom: 34px;
+  }
+
+  .home-text p {
+    font-size: 15.5px;
+    line-height: 1.75;
+    color: #33415c;
+    margin-bottom: 18px;
+  }
+
+  .home-text strong { color: var(--pe-navy); }
+
+  .home-cta {
+    margin-top: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--pe-navy);
+    color: #fff;
+    text-decoration: none;
+    padding: 13px 22px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 14px rgba(11,31,63,0.25);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .home-cta:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(11,31,63,0.32);
+  }
+
+  .home-cta .arrow { color: var(--pe-gold); font-size: 16px; }
+
+  .home-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 44px;
+  }
+
+  .home-card {
+    background: #fff;
+    border: 1px solid #e6e9f0;
+    border-radius: 12px;
+    padding: 18px;
+    border-top: 3px solid var(--pe-blue);
+  }
+
+  .home-card:nth-child(2) { border-top-color: var(--pe-green); }
+  .home-card:nth-child(3) { border-top-color: var(--pe-gold); }
+
+  .home-card .num { font-size: 22px; font-weight: 800; color: var(--pe-navy); }
+  .home-card .lbl { font-size: 12px; color: var(--text-dim); font-weight: 600; margin-top: 4px; }
+
+  /* ===== Páginas Sobre ===== */
+  .about-page {
+    height: 100%;
+    overflow-y: auto;
+    padding: 34px clamp(24px, 4vw, 60px) 42px;
+    color: #102f68;
+    background:
+      linear-gradient(135deg, rgba(22,99,214,0.05), transparent 35%),
+      #f8f9fb;
+  }
+
+  .about-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .about-kicker {
+    color: var(--pe-blue);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .about-title {
+    margin: 0;
+    color: #12366f;
+    font-size: clamp(25px, 2.4vw, 36px);
+    line-height: 1.15;
+  }
+
+  .about-back {
+    flex-shrink: 0;
+    border: 1px solid #d8dee9;
+    background: #fff;
+    color: #12366f;
+    padding: 10px 15px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .about-back:hover {
+    color: #fff;
+    background: var(--pe-blue);
+    border-color: var(--pe-blue);
+  }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .about-card {
+    min-height: 250px;
+    padding: 25px 28px;
+    background: rgba(255,255,255,0.96);
+    border: 1px solid #dfe4ec;
+    border-radius: 36px;
+    box-shadow: 0 2px 5px rgba(11,31,63,0.08);
+  }
+
+  .about-card h2 {
+    margin: 0 0 20px;
+    color: #12366f;
+    font-size: clamp(21px, 2vw, 29px);
+    line-height: 1.15;
+  }
+
+  .about-card p {
+    margin: 0;
+    color: #082b74;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
+  .about-card p + p { margin-top: 12px; }
+
+  .about-card .placeholder {
+    color: #78879f;
+    font-weight: 500;
+    font-style: italic;
+  }
+
+  @media (max-width: 900px) {
+    .about-grid { grid-template-columns: 1fr; }
+    .about-card { min-height: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===== Barra lateral ===== -->
+  <nav class="sidebar">
+    <div class="flag-stripe"></div>
+
+    <div class="brand">
+      <div class="beacon">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 4 L30 16 L18 16 Z" fill="#f8c630"/>
+          <rect x="19" y="16" width="10" height="18" rx="1.5" fill="#eef2f8"/>
+          <path d="M17 34 L31 34 L34 44 L14 44 Z" fill="#1663d6"/>
+          <rect x="12" y="42" width="24" height="3" rx="1" fill="#0b1f3f"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-text">FAROL <span>PE</span></div>
+        <div class="brand-sub">Observatório Socioeconômico</div>
+      </div>
+    </div>
+
+    <div class="menu">
+
+      <!-- ============ HOME (item simples, sem grupo) ============ -->
+      <button class="nav-single active" data-target="home">
+        <span class="icon-dot"></span> Início
+      </button>
+
+      <div class="menu-divider">Painéis</div>
+
+      <!-- =====================================================================
+           PADRÃO PARA ADICIONAR ITENS (copie e cole os blocos abaixo):
+
+           NÍVEL 1 (grupo no menu principal):
+             <div class="group" data-group="NOME">
+               <button class="group-header">
+                 <span class="label"><span class="icon"></span> TÍTULO</span>
+                 <span class="chevron">›</span>
+               </button>
+               <div class="subitems"> ... nível 2 aqui ... </div>
+             </div>
+
+           NÍVEL 2 (item final -- abre um painel):
+             <button class="sub-btn" data-target="ID_DO_PAINEL">
+               <span class="tick"></span> TÍTULO
+             </button>
+
+           NÍVEL 3 (subgrupo aninhado dentro do nível 2 -- basta usar
+           a MESMA estrutura de .group dentro de um .subitems):
+             <div class="group" data-group="NOME">
+               <button class="group-header">
+                 <span class="label">TÍTULO</span>
+                 <span class="chevron">›</span>
+               </button>
+               <div class="subitems"> ... botões .sub-btn aqui ... </div>
+             </div>
+
+           Cada .sub-btn precisa de um data-target único, e deve existir
+           um <div class="bi-container" id="MESMO_ID"> correspondente lá
+           embaixo, na área de painéis, com o iframe dentro.
+      ===================================================================== -->
+
+      <!-- Grupo: Agropecuária -->
+      <div class="group" data-group="agropecuaria">
+        <button class="group-header">
+          <span class="label"><span class="icon"></span> Agropecuária</span>
+          <span class="chevron">›</span>
+        </button>
+        <div class="subitems">
+
+          <div class="subitem-row">
+            <button class="sub-btn" data-target="bi-pam-municipio">
+              Produção agrícola de Pernambuco
+            </button>
+            <button class="info-btn" data-target="sobre-pam" data-panel="bi-pam-municipio"
+              title="Sobre a Produção Agrícola Municipal"
+              aria-label="Informações sobre a Produção Agrícola Municipal">i</button>
+          </div>
+
+          <!-- Subgrupo aninhado: Produção pecuária -->
+          <div class="group" data-group="pecuaria">
+            <button class="group-header">
+              <span class="label">Produção pecuária de Pernambuco</span>
+              <span class="chevron">›</span>
+            </button>
+            <div class="subitems">
+              <div class="subitem-row">
+                <button class="sub-btn" data-target="bi-ppm-aquicultura">
+                  <span class="tick"></span> Aquicultura
+                </button>
+                <button class="info-btn" data-target="sobre-aquicultura" data-panel="bi-ppm-aquicultura"
+                  title="Sobre a Aquicultura"
+                  aria-label="Informações sobre a Aquicultura">i</button>
+              </div>
+              <div class="subitem-row">
+                <button class="sub-btn" data-target="bi-ppm-origem-animal">
+                  <span class="tick"></span> Produção de origem animal
+                </button>
+                <button class="info-btn" data-target="sobre-origem-animal" data-panel="bi-ppm-origem-animal"
+                  title="Sobre a Produção de Origem Animal"
+                  aria-label="Informações sobre a Produção de Origem Animal">i</button>
+              </div>
+              <div class="subitem-row">
+                <button class="sub-btn" data-target="bi-ppm-rebanhos">
+                  <span class="tick"></span> Rebanhos
+                </button>
+                <button class="info-btn" data-target="sobre-rebanhos" data-panel="bi-ppm-rebanhos"
+                  title="Sobre os Rebanhos"
+                  aria-label="Informações sobre os Rebanhos">i</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div class="sidebar-footer">
+      Secretaria de Desenvolvimento Econômico do Estado de Pernambuco
+    </div>
+  </nav>
+
+  <!-- ===== Área principal ===== -->
+  <div class="bi-area">
+
+    <!-- ===== HOME ===== -->
+    <div class="bi-container active" id="home">
+      <div class="home-inner">
+
+        <div class="home-topline">
+          <div class="stripe"></div>
+          <span>Governo do Estado de Pernambuco</span>
+        </div>
+
+        <h1 class="home-title">
+          <svg class="beacon-lg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 4 L30 16 L18 16 Z" fill="#f8c630"/>
+            <rect x="19" y="16" width="10" height="18" rx="1.5" fill="#0b1f3f"/>
+            <path d="M17 34 L31 34 L34 44 L14 44 Z" fill="#1663d6"/>
+            <rect x="12" y="42" width="24" height="3" rx="1" fill="#0b1f3f"/>
+          </svg>
+          FAROL <span class="gold">PE</span>
+        </h1>
+        <div class="home-subtitle">Observatório Socioeconômico de Pernambuco</div>
+
+        <div class="home-text">
+          <p>O <strong>Farol PE</strong> reúne, em um só lugar, os principais indicadores oficiais sobre a economia e a sociedade pernambucanas, atualizados na periodicidade de cada pesquisa e organizados por tema. A plataforma é desenvolvida pela <strong>Secretaria de Desenvolvimento Econômico do Estado de Pernambuco (SDEC-PE)</strong> com o objetivo de oferecer a gestores públicos, pesquisadores, imprensa e à sociedade em geral uma leitura confiável e atualizada do desempenho do estado.</p>
+
+          <p>Cada painel permite consultar séries históricas, comparar Pernambuco com outros estados, regiões e municípios, e visualizar os dados em gráficos, mapas e tabelas.</p>
+
+          <p>Para aprofundar a leitura dos dados aqui apresentados, a SDEC-PE também publica boletins econômicos mensais e relatórios analíticos setoriais.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ===== Painéis (um bi-container por data-target usado acima) ===== -->
+
+    <div class="bi-container" id="bi-pam-municipio">
+      <iframe
+        title="Produção agrícola de Pernambuco"
+        src="https://app.fabric.microsoft.com/view?r=eyJrIjoiMWUxY2I2YTEtNmZkMC00Mzk4LWE4MTQtMDg4NGRlYWVmZjhlIiwidCI6ImEzMDA5OGM1LWQ1NDMtNDc2Zi04NTM4LTE3YjhlYmE0MzM4MSJ9"
+        frameborder="0"
+        allowFullScreen="true">
+      </iframe>
+    </div>
+
+    <div class="bi-container" id="bi-ppm-aquicultura">
+      <iframe
+        title="Aquicultura"
+        src="https://app.fabric.microsoft.com/view?r=eyJrIjoiNjFjNjQzNmQtYTZjYS00ZjI3LThhZGEtMWNkYjk3Y2Q3MTg4IiwidCI6ImEzMDA5OGM1LWQ1NDMtNDc2Zi04NTM4LTE3YjhlYmE0MzM4MSJ9"
+        frameborder="0"
+        allowFullScreen="true">
+      </iframe>
+    </div>
+
+    <div class="bi-container" id="bi-ppm-origem-animal">
+      <iframe
+        title="Produção de origem animal"
+        src="COLE_AQUI_O_LINK_ORIGEM_ANIMAL"
+        frameborder="0"
+        allowFullScreen="true">
+      </iframe>
+    </div>
+
+    <div class="bi-container" id="bi-ppm-rebanhos">
+      <iframe
+        title="Rebanhos"
+        src="COLE_AQUI_O_LINK_REBANHOS"
+        frameborder="0"
+        allowFullScreen="true">
+      </iframe>
+    </div>
+
+    <!-- ===== Páginas de informações ===== -->
+    <div class="bi-container" id="sobre-pam">
+      <section class="about-page">
+        <header class="about-header">
+          <div>
+            <div class="about-kicker">Sobre o indicador · PAM</div>
+            <h1 class="about-title">Produção Agrícola de Pernambuco</h1>
+          </div>
+          <button class="about-back" data-back-target="bi-pam-municipio">← Voltar ao painel</button>
+        </header>
+        <div class="about-grid">
+          <article class="about-card">
+            <h2>O que é</h2>
+            <p>Divulgada anualmente pelo Instituto Brasileiro de Geografia e Estatística (IBGE), com um ano de defasagem, a Produção Agrícola Municipal (PAM) é o principal retrato da agricultura brasileira.</p>
+            <p>A pesquisa investiga, por município, cada lavoura temporária e permanente, a área plantada, a área colhida, a quantidade produzida, o rendimento médio e o valor da produção.</p>
+          </article>
+          <article class="about-card">
+            <h2>Como é calculado</h2>
+            <p>O levantamento é realizado anualmente pelo IBGE junto a informantes qualificados em cada município. Uma cultura só é divulgada quando ocupa pelo menos um hectare e registra uma tonelada de produção.</p>
+            <p>O valor da produção resulta da quantidade produzida multiplicada pelo preço médio recebido pelo produtor. Para comparações no tempo, o Farol PE apresenta também valores corrigidos pelo IPCA, a preços constantes do ano de referência informado no painel.</p>
+          </article>
+          <article class="about-card">
+            <h2>O que significam as variações</h2>
+            <p>Por ser anual, a PAM não possui variação mensal nem índice de base fixa. A análise compara níveis de área, quantidade, rendimento e valor entre anos-safra, municípios e regiões de desenvolvimento.</p>
+            <p>Uma alta no valor pode refletir aumento de produção, elevação de preços ou ambos. Por isso, quantidade e rendimento devem ser observados junto ao valor monetário.</p>
+          </article>
+          <article class="about-card">
+            <h2>Síntese da leitura mais recente</h2>
+            <p class="placeholder">Espaço reservado para o destaque do último ano disponível: principais culturas, municípios líderes e variações relevantes.</p>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <div class="bi-container" id="sobre-aquicultura">
+      <section class="about-page">
+        <header class="about-header">
+          <div>
+            <div class="about-kicker">Sobre o indicador · PPM</div>
+            <h1 class="about-title">Aquicultura em Pernambuco</h1>
+          </div>
+          <button class="about-back" data-back-target="bi-ppm-aquicultura">← Voltar ao painel</button>
+        </header>
+        <div class="about-grid">
+          <article class="about-card">
+            <h2>O que é</h2>
+            <p>A aquicultura integra a Pesquisa da Pecuária Municipal (PPM), divulgada anualmente pelo IBGE. Ela acompanha, por município, a produção de organismos aquáticos criados em cativeiro, como peixes, camarões, moluscos e outros produtos aquícolas.</p>
+            <p>O painel apresenta a quantidade produzida e o valor da produção das espécies disponíveis para Pernambuco.</p>
+          </article>
+          <article class="about-card">
+            <h2>Como é calculado</h2>
+            <p>As informações são apuradas anualmente pelo IBGE junto a fontes qualificadas nos municípios. A quantidade corresponde à produção obtida durante o ano, conforme a unidade específica de cada produto.</p>
+            <p>O valor da produção é estimado pela quantidade produzida multiplicada pelo preço médio recebido pelo produtor. Valores de anos diferentes devem ser comparados a preços constantes para separar o efeito da inflação.</p>
+          </article>
+          <article class="about-card">
+            <h2>O que significam as variações</h2>
+            <p>Como a pesquisa é anual, as comparações são feitas entre anos, municípios e regiões de desenvolvimento. Uma variação positiva indica crescimento da quantidade, do preço recebido ou dos dois componentes.</p>
+            <p>Na leitura do valor produzido, observe também a espécie selecionada e sua unidade de medida, pois os produtos aquícolas possuem escalas distintas.</p>
+          </article>
+          <article class="about-card">
+            <h2>Síntese da leitura mais recente</h2>
+            <p class="placeholder">Espaço reservado para o destaque do último ano disponível: espécies com maior produção, municípios líderes e mudanças relevantes.</p>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <div class="bi-container" id="sobre-origem-animal">
+      <section class="about-page">
+        <header class="about-header">
+          <div>
+            <div class="about-kicker">Sobre o indicador · PPM</div>
+            <h1 class="about-title">Produção de Origem Animal em Pernambuco</h1>
+          </div>
+          <button class="about-back" data-back-target="bi-ppm-origem-animal">← Voltar ao painel</button>
+        </header>
+        <div class="about-grid">
+          <article class="about-card"><h2>O que é</h2><p>É o conjunto de produtos de origem animal acompanhado anualmente pela Pesquisa da Pecuária Municipal, como leite, ovos, mel e lã, apresentado por município.</p></article>
+          <article class="about-card"><h2>Como é calculado</h2><p>O IBGE apura a quantidade produzida durante o ano e o respectivo valor da produção. Cada produto utiliza sua unidade própria, e o valor resulta da quantidade associada ao preço médio recebido pelo produtor.</p></article>
+          <article class="about-card"><h2>O que significam as variações</h2><p>As variações mostram mudanças anuais na quantidade ou no valor. Para interpretar o valor, é importante distinguir crescimento real da produção de simples alteração nos preços.</p></article>
+          <article class="about-card"><h2>Síntese da leitura mais recente</h2><p class="placeholder">Espaço reservado para os destaques do último ano disponível.</p></article>
+        </div>
+      </section>
+    </div>
+
+    <div class="bi-container" id="sobre-rebanhos">
+      <section class="about-page">
+        <header class="about-header">
+          <div>
+            <div class="about-kicker">Sobre o indicador · PPM</div>
+            <h1 class="about-title">Rebanhos de Pernambuco</h1>
+          </div>
+          <button class="about-back" data-back-target="bi-ppm-rebanhos">← Voltar ao painel</button>
+        </header>
+        <div class="about-grid">
+          <article class="about-card"><h2>O que é</h2><p>A Pesquisa da Pecuária Municipal acompanha anualmente o efetivo dos principais rebanhos, como bovinos, suínos, caprinos, ovinos e aves, em cada município.</p></article>
+          <article class="about-card"><h2>Como é calculado</h2><p>O efetivo corresponde ao número de animais existente na data de referência da pesquisa. As informações são obtidas pelo IBGE junto a fontes qualificadas em cada município.</p></article>
+          <article class="about-card"><h2>O que significam as variações</h2><p>As variações representam aumento ou redução do número de cabeças entre anos. Elas podem refletir ciclos produtivos, condições climáticas, custos, demanda e alterações na atividade pecuária local.</p></article>
+          <article class="about-card"><h2>Síntese da leitura mais recente</h2><p class="placeholder">Espaço reservado para os principais rebanhos, municípios líderes e mudanças do último ano disponível.</p></article>
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  /* =====================================================================
+     Menu genérico e recursivo -- funciona para qualquer profundidade
+     de grupos aninhados (nível 1, 2, 3...), sem precisar tocar no JS
+     ao adicionar novos itens.
+  ===================================================================== */
+
+  const homeBtn   = document.querySelector('.nav-single');
+  const allGroups = document.querySelectorAll('.group');
+
+  function selectPanel(targetId) {
+    document.querySelectorAll('.sub-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.target === targetId)
+    );
+    document.querySelectorAll('.info-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.target === targetId)
+    );
+    document.querySelectorAll('.bi-container').forEach(p =>
+      p.classList.toggle('active', p.id === targetId)
+    );
+    homeBtn.classList.toggle('active', targetId === 'home');
+  }
+
+  homeBtn.addEventListener('click', () => {
+    allGroups.forEach(g => g.classList.remove('open'));
+    selectPanel('home');
+  });
+
+  allGroups.forEach(group => {
+    const header = group.querySelector(':scope > .group-header');
+
+    header.addEventListener('click', (e) => {
+      e.stopPropagation();
+
+      const wasOpen = group.classList.contains('open');
+      const parentList = group.parentElement; // .menu (nível 1) ou .subitems (aninhado)
+
+      // fecha os grupos irmãos no MESMO nível
+      Array.from(parentList.children).forEach(child => {
+        if (child !== group && child.classList && child.classList.contains('group')) {
+          child.classList.remove('open');
+        }
+      });
+
+      if (!wasOpen) {
+        group.classList.add('open');
+      } else {
+        group.classList.remove('open');
+        if (parentList.classList.contains('menu')) {
+          selectPanel('home');
+        }
+      }
+    });
+  });
+
+  document.querySelectorAll('.sub-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectPanel(btn.dataset.target);
+    });
+  });
+
+  document.querySelectorAll('.info-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectPanel(btn.dataset.target);
+    });
+  });
+
+  document.querySelectorAll('.about-back').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectPanel(btn.dataset.backTarget);
+    });
+  });
+
+  // estado inicial
+  selectPanel('home');
+</script>
+
+</body>
+</html>
